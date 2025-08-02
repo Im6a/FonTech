@@ -15,6 +15,11 @@ using FonTech.Domain.Enum;
 using FonTech.Domain.Dto.Report;
 using FonTech.Domain.Interfaces.Validations;
 using AutoMapper;
+using FonTech.Producer.Interfaces;
+using FonTech.Domain.Settings;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Caching.Distributed;
+using FonTech.Domain.Extensions;
 
 namespace FonTech.Application.Services
 {
@@ -23,16 +28,23 @@ namespace FonTech.Application.Services
         private readonly IBaseRepository<Report> _reportRepository;
         private readonly IBaseRepository<User> _userRepository;
         private readonly IReportValidator _reportValidator;
+        private readonly IMessageProducer _messageProducer;
+        private readonly IOptions<RabbitMqSettings> _rabbitMqOptions;
+        private readonly IDistributedCache _distributedCache;
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
         public ReportService(IBaseRepository<Report> reportRepository, IBaseRepository<User> userRepository,
-            ILogger logger, IReportValidator reportValidator, IMapper mapper)
+            ILogger logger, IReportValidator reportValidator, IMapper mapper, IMessageProducer messageProducer, IOptions<RabbitMqSettings> rabbitMqOptions,
+            IDistributedCache distributedCache)
         {
             _reportRepository = reportRepository;
             _userRepository = userRepository;
             _reportValidator = reportValidator;
             _logger = logger;
             _mapper = mapper;
+            _messageProducer = messageProducer;
+            _rabbitMqOptions = rabbitMqOptions;
+            _distributedCache = distributedCache;
         }
 
         /// <inheritdoc/>
@@ -58,6 +70,9 @@ namespace FonTech.Application.Services
                     UserId = user.Id,
                 };
                 await _reportRepository.CreateAsync(report);
+
+                await _messageProducer.SendMessage(report, _rabbitMqOptions.Value.RoutingKey, _rabbitMqOptions.Value.ExchangeName);
+
                 return new BaseResult<ReportDto>()
                 {
                     Data = _mapper.Map<ReportDto>(report),
@@ -139,13 +154,16 @@ namespace FonTech.Application.Services
             }
             if (report == null)
             {
-                _logger.Warning("Отчет с {id} не найден", id);
+                _logger.Warning($"Отчет с {id} не найден", id);
                 return Task.FromResult(new BaseResult<ReportDto>()
                 {
                     ErrorMessage = ErrorMessage.ReportNotFound,
                     ErrorCode = (int)ErrorCodes.ReportNotFound
                 });
             }
+
+            _distributedCache.SetObject($"Report_{id}", report); //redis
+
             return Task.FromResult(new BaseResult<ReportDto>()
             {
                 Data = report

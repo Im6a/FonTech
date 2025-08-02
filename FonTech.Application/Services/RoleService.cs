@@ -8,6 +8,7 @@ using FonTech.Domain.Interfaces.Databases;
 using FonTech.Domain.Interfaces.Repositories;
 using FonTech.Domain.Interfaces.Services;
 using FonTech.Domain.Result;
+using FonTech.Producer.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -24,14 +25,17 @@ namespace FonTech.Application.Services
         private readonly IBaseRepository<Role> _roleRepository;
         private readonly IBaseRepository<UserRole> _userRoleRepository;
         private readonly IMapper _mapper;
+        private readonly IMessageProducer _messageProducer;
+
         public RoleService(IBaseRepository<User> userRepository, IBaseRepository<Role> roleRepository, 
-            IBaseRepository<UserRole> userRoleRepository, IMapper mapper, IUnitOfWork unitOfWork)
+            IBaseRepository<UserRole> userRoleRepository, IMapper mapper, IUnitOfWork unitOfWork, IMessageProducer messageProducer)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
             _userRoleRepository = userRoleRepository;
             _mapper = mapper;
             _unitOfWork = unitOfWork;
+            _messageProducer = messageProducer;
         }
 
         public async Task<BaseResult<UserRoleDto>> AddRoleForUserAsync(UserRoleDto dto)

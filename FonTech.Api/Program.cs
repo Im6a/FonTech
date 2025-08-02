@@ -3,6 +3,9 @@ using FonTech.Application.DependencyInjection;
 using Serilog;
 using FonTech.Domain.Settings;
 using FonTech.Api.Middlewares;
+using FonTech.Producer.DependencyInjection;
+using FonTech.Consumer.DependencyInjection;
+using Prometheus;
 namespace FonTech.Api
 {
     public class Program
@@ -11,9 +14,13 @@ namespace FonTech.Api
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection(RabbitMqSettings.DefaultSection));
             builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection(JwtSettings.DefaultSection)); //вытягивает настройки Jwt из appsettings.json и упаковывает в С
+            builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection(nameof(RedisSettings)));
 
             // Add services to the container.
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.UseHttpClientMetrics(); // (prometheus)
 
             builder.Services.AddControllers();
 
@@ -28,7 +35,9 @@ namespace FonTech.Api
 
 
             builder.Services.AddDataAccessLayer(builder.Configuration);
-            builder.Services.AddApplication();
+            builder.Services.AddApplication(builder.Configuration);
+            builder.Services.AddProducer();
+            builder.Services.AddConsumer();
 
             var app = builder.Build();
 
@@ -49,6 +58,17 @@ namespace FonTech.Api
             app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()); //узнать для чего это (вроде как чтобы выстроить разрешения на прием запросов от других серверов)
 
             app.UseHttpsRedirection();
+
+            app.UseMetricServer();
+            app.UseHttpMetrics();
+            app.MapMetrics();
+
+            //для проверки метрик
+            app.MapGet("/random-number", () =>
+            {
+                var number = Random.Shared.Next(0, 100);
+                return Results.Ok(number);
+            });
 
             app.MapControllers();
 

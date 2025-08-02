@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>4e51ed88-cb6e-4ae2-b08b-3703bb28c4fb</UserSecretsId>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,13 +14,17 @@
     <PackageReference Include="AutoMapper" Version="14.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.18" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="9.0.3" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
+    <PackageReference Include="prometheus-net.AspNetCore" Version="8.2.1" />
     <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.3.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\FonTech.Application\FonTech.Application.csproj" />
+    <ProjectReference Include="..\FonTech.Consumer\FonTech.Consumer.csproj" />
     <ProjectReference Include="..\FonTech.DAL\FonTech.DAL.csproj" />
+    <ProjectReference Include="..\FonTech.Producer\FonTech.Producer.csproj" />
   </ItemGroup>
 
 </Project>

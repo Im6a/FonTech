@@ -14,14 +14,26 @@ using FonTech.Domain.Dto.Report;
 using FonTech.Application.Validations.FluentValidations.Report;
 using FonTech.Domain.Interfaces.Validations;
 using FonTech.Application.Validations;
-
+using FonTech.Domain.Settings;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 namespace FonTech.Application.DependencyInjection
 {
     public static class DependencyInjection
     {
-        public static void AddApplication(this IServiceCollection services)
+        public static void AddApplication(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddAutoMapper(typeof(ReportMapping));
+
+            var options = configuration.GetSection(nameof(RedisSettings));
+            var resitUrl = options["Url"];
+            var instanceName = options["InstanceName"];
+
+            services.AddStackExchangeRedisCache(redisCacheOptions =>
+            {
+                redisCacheOptions.Configuration = resitUrl;
+                redisCacheOptions.InstanceName = instanceName;
+            });
 
             InitServices(services);
         }
@@ -35,6 +47,7 @@ namespace FonTech.Application.DependencyInjection
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITokenService, TokenService>();
+
         }
     }
 }
